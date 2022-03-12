@@ -1,4 +1,7 @@
-import * as AWS from 'aws-sdk';
+import * as AWSXRay from 'aws-xray-sdk-core';
+import * as RawAWS from 'aws-sdk';
+
+const AWS = AWSXRay.captureAWS(RawAWS);
 
 const TABLE_NAME = process.env.TABLE_NAME || '';
 

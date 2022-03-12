@@ -86,7 +86,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
         TABLE_NAME: this.dynamoDbTable.tableName,
       },
       runtime: lambda.Runtime.NODEJS_14_X,
-      tracing: lambda.Tracing.PASS_THROUGH
+      tracing: lambda.Tracing.ACTIVE
     }
 
     // Create a Lambda function for each of the CRUD operations

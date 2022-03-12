@@ -1,5 +1,8 @@
-import * as AWS from 'aws-sdk';
+import * as AWSXRay from 'aws-xray-sdk-core';
+import * as RawAWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
+
+const AWS = AWSXRay.captureAWS(RawAWS);
 
 const TABLE_NAME = process.env.TABLE_NAME || '';
 const PRIMARY_KEY = process.env.PRIMARY_KEY || '';

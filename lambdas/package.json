@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "aws-sdk": "*",
+    "aws-xray-sdk-core": "^3.3.4",
     "uuid": "*"
   }
 }
