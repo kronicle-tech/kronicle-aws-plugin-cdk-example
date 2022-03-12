@@ -7,7 +7,9 @@
     "postinstall": "(cd lambdas && npm install);",
     "build": "tsc",
     "watch": "tsc -w",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "deploy": "tsc && cdk deploy",
+    "destroy": "tsc && cdk destroy"
   },
   "author": {
     "name": "Aleksandar Simovic <alexander.simovic@gmail.com>",
@@ -21,6 +23,7 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
+    "@aws-cdk/aws-synthetics-alpha": "^2.15.0-alpha.0",
     "aws-cdk-lib": "^2.0.0",
     "constructs": "^10.0.0"
   }
