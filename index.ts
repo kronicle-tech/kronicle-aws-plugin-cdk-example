@@ -192,7 +192,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
 
   private createCanary() {
     this.canary = new syntheticsAlpha.Canary(this, 'itemsCanary', {
-      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(30)),
+      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.hours(2)),
       test: syntheticsAlpha.Test.custom({
         code: syntheticsAlpha.Code.fromAsset(path.join(__dirname, 'canary')),
         handler: 'all-endpoints.handler',
