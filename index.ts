@@ -1,14 +1,13 @@
+import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as cdk from 'aws-cdk-lib';
-import * as lambdaNodeJs from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as path from 'path'
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodeJs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as synthetics from 'aws-cdk-lib/aws-synthetics';
 import * as syntheticsAlpha from '@aws-cdk/aws-synthetics-alpha';
-import {LambdaIntegration} from "aws-cdk-lib/aws-apigateway";
+import * as path from 'path'
 
 export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   private vpc: ec2.Vpc;
@@ -172,11 +171,11 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     });
 
     // Integrate the Lambda functions with the API Gateway resource
-    const getAllIntegration = new LambdaIntegration(this.getAllLambda);
-    const createOneIntegration = new LambdaIntegration(this.createOneLambda);
-    const getOneIntegration = new LambdaIntegration(this.getOneLambda);
-    const updateOneIntegration = new LambdaIntegration(this.updateOneLambda);
-    const deleteOneIntegration = new LambdaIntegration(this.deleteOneLambda);
+    const getAllIntegration = new apigateway.LambdaIntegration(this.getAllLambda);
+    const createOneIntegration = new apigateway.LambdaIntegration(this.createOneLambda);
+    const getOneIntegration = new apigateway.LambdaIntegration(this.getOneLambda);
+    const updateOneIntegration = new apigateway.LambdaIntegration(this.updateOneLambda);
+    const deleteOneIntegration = new apigateway.LambdaIntegration(this.deleteOneLambda);
 
     const items = this.apiGateway.root.addResource('items');
     items.addMethod('GET', getAllIntegration);
@@ -261,4 +260,6 @@ new ApiLambdaCrudDynamoDBStack(app, 'ApiLambdaCrudDynamoDBExample', {
     region: process.env.CDK_DEFAULT_REGION
   }
 });
+cdk.Tags.of(app).add('team', 'kronicle-project');
+cdk.Tags.of(app).add('example', 'true');
 app.synth();
