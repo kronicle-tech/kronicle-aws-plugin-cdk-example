@@ -1,0 +1,21 @@
+# This file is read automatically by Kronicle https://kronicle.tech
+
+components:
+  - id: lambda-example
+    name: Lambda Example
+    typeId: spa
+    repo:
+      url: https://github.com/kronicle-tech/kronicle.git
+    description: |
+      An example AWS Lambda based service.  Uses API Gateway and DynamoDB
+    notes: |
+      The example service is based on 
+      https://github.com/aws-samples/aws-cdk-examples/tree/master/typescript/api-cors-lambda-crud-dynamodb
+    tags:
+      - backend
+    teams:
+      - teamId: kronicle-project
+    platform: aws-serverless
+    responsibilities:
+      - description: |
+          Provides CRUD endpoints with data stored in DynamoDB.  
