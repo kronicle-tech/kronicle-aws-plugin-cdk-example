@@ -16,6 +16,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   private getOneLambda: lambdaNodeJs.NodejsFunction;
   private createOneLambda: lambdaNodeJs.NodejsFunction;
   private updateOneLambda: lambdaNodeJs.NodejsFunction;
+  private deleteAllLambda: lambdaNodeJs.NodejsFunction;
   private deleteOneLambda: lambdaNodeJs.NodejsFunction;
   private apiGateway: apigateway.RestApi;
   private canary: syntheticsAlpha.Canary;
@@ -85,7 +86,8 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
         TABLE_NAME: this.dynamoDbTable.tableName,
       },
       runtime: lambda.Runtime.NODEJS_14_X,
-      tracing: lambda.Tracing.ACTIVE
+      tracing: lambda.Tracing.ACTIVE,
+      timeout: cdk.Duration.seconds(10)
     }
 
     // Create a Lambda function for each of the CRUD operations
@@ -96,6 +98,11 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     this.getAllLambda = new lambdaNodeJs.NodejsFunction(this, 'getAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-all.ts'),
       ...nodeJsFunctionProps,
+    });
+    this.deleteAllLambda = new lambdaNodeJs.NodejsFunction(this, 'deleteAllItemsFunction', {
+      entry: path.join(__dirname, 'lambdas', 'delete-all.ts'),
+      ...nodeJsFunctionProps,
+      timeout: cdk.Duration.minutes(15)
     });
     this.createOneLambda = new lambdaNodeJs.NodejsFunction(this, 'createItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'create.ts'),
@@ -115,6 +122,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     this.dynamoDbTable.grantReadWriteData(this.getOneLambda);
     this.dynamoDbTable.grantReadWriteData(this.createOneLambda);
     this.dynamoDbTable.grantReadWriteData(this.updateOneLambda);
+    this.dynamoDbTable.grantReadWriteData(this.deleteAllLambda);
     this.dynamoDbTable.grantReadWriteData(this.deleteOneLambda);
   }
 
@@ -173,6 +181,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     // Integrate the Lambda functions with the API Gateway resource
     const getAllIntegration = new apigateway.LambdaIntegration(this.getAllLambda);
     const createOneIntegration = new apigateway.LambdaIntegration(this.createOneLambda);
+    const deleteAllIntegration = new apigateway.LambdaIntegration(this.deleteAllLambda);
     const getOneIntegration = new apigateway.LambdaIntegration(this.getOneLambda);
     const updateOneIntegration = new apigateway.LambdaIntegration(this.updateOneLambda);
     const deleteOneIntegration = new apigateway.LambdaIntegration(this.deleteOneLambda);
@@ -180,6 +189,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     const items = this.apiGateway.root.addResource('items');
     items.addMethod('GET', getAllIntegration);
     items.addMethod('POST', createOneIntegration);
+    items.addMethod('DELETE', deleteAllIntegration);
     addCorsOptions(items);
 
     const singleItem = items.addResource('{id}');
@@ -191,7 +201,7 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
 
   private createCanary() {
     this.canary = new syntheticsAlpha.Canary(this, 'itemsCanary', {
-      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(60)),
+      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(1)),
       test: syntheticsAlpha.Test.custom({
         code: syntheticsAlpha.Code.fromAsset(path.join(__dirname, 'canary')),
         handler: 'all-endpoints.handler',
@@ -261,5 +271,6 @@ new ApiLambdaCrudDynamoDBStack(app, 'ApiLambdaCrudDynamoDBExample', {
   }
 });
 cdk.Tags.of(app).add('team', 'kronicle-project');
+cdk.Tags.of(app).add('component', 'lambda-example');
 cdk.Tags.of(app).add('example', 'true');
 app.synth();
