@@ -9,7 +9,7 @@ import * as synthetics from 'aws-cdk-lib/aws-synthetics';
 import * as syntheticsAlpha from '@aws-cdk/aws-synthetics-alpha';
 import * as path from 'path'
 
-export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
+export class LambdaExampleStack extends cdk.Stack {
   private vpc: ec2.Vpc;
   private dynamoDbTable: dynamodb.Table;
   private getAllLambda: lambdaNodeJs.NodejsFunction;
@@ -32,14 +32,14 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createVpc() {
-    this.vpc = new ec2.Vpc(this, "exampleVpc", {
-      vpcName: "example",
+    this.vpc = new ec2.Vpc(this, "Vpc", {
+      vpcName: "LambdaExampleVpc",
       maxAzs: 2,
       natGateways: 0,
       subnetConfiguration: [
         {
           cidrMask: 24,
-          name: "public",
+          name: "LambdaExamplePublicSubnet",
           subnetType: ec2.SubnetType.PUBLIC,
         },
       ],
@@ -57,12 +57,12 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createDynamoDbTable() {
-    this.dynamoDbTable = new dynamodb.Table(this, 'items', {
+    this.dynamoDbTable = new dynamodb.Table(this, 'LambdaExampleDynamoDbTable', {
       partitionKey: {
         name: 'itemId',
         type: dynamodb.AttributeType.STRING
       },
-      tableName: 'items',
+      tableName: 'LambdaExampleDynamoDbTable',
 
       /**
        *  The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
@@ -91,28 +91,28 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     }
 
     // Create a Lambda function for each of the CRUD operations
-    this.getOneLambda = new lambdaNodeJs.NodejsFunction(this, 'getOneItemFunction', {
+    this.getOneLambda = new lambdaNodeJs.NodejsFunction(this, 'GetOneItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-one.ts'),
       ...nodeJsFunctionProps,
     });
-    this.getAllLambda = new lambdaNodeJs.NodejsFunction(this, 'getAllItemsFunction', {
+    this.getAllLambda = new lambdaNodeJs.NodejsFunction(this, 'GetAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-all.ts'),
       ...nodeJsFunctionProps,
     });
-    this.deleteAllLambda = new lambdaNodeJs.NodejsFunction(this, 'deleteAllItemsFunction', {
+    this.deleteAllLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-all.ts'),
       ...nodeJsFunctionProps,
       timeout: cdk.Duration.minutes(15)
     });
-    this.createOneLambda = new lambdaNodeJs.NodejsFunction(this, 'createItemFunction', {
+    this.createOneLambda = new lambdaNodeJs.NodejsFunction(this, 'CreateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'create.ts'),
       ...nodeJsFunctionProps,
     });
-    this.updateOneLambda = new lambdaNodeJs.NodejsFunction(this, 'updateItemFunction', {
+    this.updateOneLambda = new lambdaNodeJs.NodejsFunction(this, 'UpdateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'update-one.ts'),
       ...nodeJsFunctionProps,
     });
-    this.deleteOneLambda = new lambdaNodeJs.NodejsFunction(this, 'deleteItemFunction', {
+    this.deleteOneLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-one.ts'),
       ...nodeJsFunctionProps,
     });
@@ -127,15 +127,15 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createApiGateway() {
-    const lambdaSecurityGroup = new ec2.SecurityGroup(this, 'lambdaSecurityGroup', {
+    const lambdaSecurityGroup = new ec2.SecurityGroup(this, 'ApiGatewaySecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: true,
-      securityGroupName: 'LambdaSecurityGroup'
+      securityGroupName: 'LambdaExampleApiGatewaySecurityGroup'
     });
 
     lambdaSecurityGroup.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(443))
 
-    const vpcEndpoint = new ec2.InterfaceVpcEndpoint(this, 'apiVpcEndpoint', {
+    const vpcEndpoint = new ec2.InterfaceVpcEndpoint(this, 'ApiVpcEndpoint', {
       vpc: this.vpc,
       service: {
         name: 'com.amazonaws.us-west-2.execute-api',
@@ -149,8 +149,8 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     })
 
     // Create an API Gateway resource for each of the CRUD operations
-    this.apiGateway = new apigateway.RestApi(this, 'itemsApi', {
-      restApiName: 'Items Service',
+    this.apiGateway = new apigateway.RestApi(this, 'ApiGateway', {
+      restApiName: 'LambdaExampleApi',
       endpointTypes: [apigateway.EndpointType.PRIVATE],
       deployOptions: {
         tracingEnabled: true
@@ -200,8 +200,9 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createCanary() {
-    this.canary = new syntheticsAlpha.Canary(this, 'itemsCanary', {
-      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(1)),
+    this.canary = new syntheticsAlpha.Canary(this, 'Canary', {
+      canaryName: 'LambdaExampleCanary',
+      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(60)),
       test: syntheticsAlpha.Test.custom({
         code: syntheticsAlpha.Code.fromAsset(path.join(__dirname, 'canary')),
         handler: 'all-endpoints.handler',
@@ -217,10 +218,10 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
       'service-role/AWSLambdaVPCAccessExecutionRole'
     ))
 
-    const canarySecurityGroup = new ec2.SecurityGroup(this, 'canarySecurityGroup', {
+    const canarySecurityGroup = new ec2.SecurityGroup(this, 'CanarySecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: true,
-      securityGroupName: 'CanarySecurityGroup'
+      securityGroupName: 'LambdaExampleCanarySecurityGroup'
     });
 
     canarySecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic())
@@ -264,7 +265,7 @@ export function addCorsOptions(apiResource: apigateway.IResource) {
 }
 
 const app = new cdk.App();
-new ApiLambdaCrudDynamoDBStack(app, 'ApiLambdaCrudDynamoDBExample', {
+new LambdaExampleStack(app, 'LambdaExample', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION
