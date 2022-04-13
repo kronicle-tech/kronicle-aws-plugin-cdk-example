@@ -33,13 +33,13 @@ export class LambdaExampleStack extends cdk.Stack {
 
   private createVpc() {
     this.vpc = new ec2.Vpc(this, "Vpc", {
-      vpcName: "LambdaExampleVpc",
+      vpcName: "lambda-example-vpc",
       maxAzs: 2,
       natGateways: 0,
       subnetConfiguration: [
         {
           cidrMask: 24,
-          name: "Public",
+          name: "public",
           subnetType: ec2.SubnetType.PUBLIC,
         },
       ],
@@ -62,7 +62,7 @@ export class LambdaExampleStack extends cdk.Stack {
         name: 'itemId',
         type: dynamodb.AttributeType.STRING
       },
-      tableName: 'LambdaExampleDynamoDbTable',
+      tableName: 'lambda-example-dynamodb-table',
 
       /**
        *  The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
@@ -94,33 +94,33 @@ export class LambdaExampleStack extends cdk.Stack {
     this.getItemLambda = new lambdaNodeJs.NodejsFunction(this, 'GetItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-one.ts'),
       ...nodeJsFunctionProps,
-      functionName: 'LambdaExampleGetItemFunction'
+      functionName: 'lambda-example-get-item-function'
     });
     this.getAllItemsLambda = new lambdaNodeJs.NodejsFunction(this, 'GetAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-all.ts'),
       ...nodeJsFunctionProps,
-      functionName: 'LambdaExampleGetAllItemsFunction'
+      functionName: 'lambda-example-get-all-items-function'
     });
     this.deleteAllItemsLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-all.ts'),
       ...nodeJsFunctionProps,
-      functionName: 'LambdaExampleDeleteAllItemsFunction',
+      functionName: 'lambda-example-delete-all-items-function',
       timeout: cdk.Duration.minutes(15)
     });
     this.createItemLambda = new lambdaNodeJs.NodejsFunction(this, 'CreateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'create.ts'),
       ...nodeJsFunctionProps,
-      functionName: 'LambdaExampleCreateItemFunction'
+      functionName: 'lambda-example-create-item-function'
     });
     this.updateItemLambda = new lambdaNodeJs.NodejsFunction(this, 'UpdateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'update-one.ts'),
       ...nodeJsFunctionProps,
-      functionName: 'LambdaExampleUpdateItemFunction'
+      functionName: 'lambda-example-update-item-function'
     });
     this.deleteItemLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-one.ts'),
       ...nodeJsFunctionProps,
-      functionName: 'LambdaExampleDeleteItemFunction'
+      functionName: 'lambda-example-delete-item-function'
     });
 
     // Grant the Lambda function read access to the DynamoDB table
@@ -136,7 +136,7 @@ export class LambdaExampleStack extends cdk.Stack {
     const lambdaSecurityGroup = new ec2.SecurityGroup(this, 'ApiGatewaySecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: true,
-      securityGroupName: 'LambdaExampleApiGatewaySecurityGroup'
+      securityGroupName: 'lambda-example-api-gateway-security-group'
     });
 
     lambdaSecurityGroup.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(443))
@@ -156,7 +156,7 @@ export class LambdaExampleStack extends cdk.Stack {
 
     // Create an API Gateway resource for each of the CRUD operations
     this.apiGateway = new apigateway.RestApi(this, 'ApiGateway', {
-      restApiName: 'LambdaExampleApi',
+      restApiName: 'lambda-example-api',
       endpointTypes: [apigateway.EndpointType.PRIVATE],
       deployOptions: {
         tracingEnabled: true
@@ -207,7 +207,7 @@ export class LambdaExampleStack extends cdk.Stack {
 
   private createCanary() {
     this.canary = new syntheticsAlpha.Canary(this, 'Canary', {
-      canaryName: 'LambdaExampleCanary',
+      canaryName: 'lambda-example-canary',
       schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(60)),
       test: syntheticsAlpha.Test.custom({
         code: syntheticsAlpha.Code.fromAsset(path.join(__dirname, 'canary')),
@@ -227,7 +227,7 @@ export class LambdaExampleStack extends cdk.Stack {
     const canarySecurityGroup = new ec2.SecurityGroup(this, 'CanarySecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: true,
-      securityGroupName: 'LambdaExampleCanarySecurityGroup'
+      securityGroupName: 'lambda-example-canary-security-group'
     });
 
     canarySecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic())
