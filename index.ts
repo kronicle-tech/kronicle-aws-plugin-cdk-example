@@ -12,12 +12,12 @@ import * as path from 'path'
 export class LambdaExampleStack extends cdk.Stack {
   private vpc: ec2.Vpc;
   private dynamoDbTable: dynamodb.Table;
-  private getAllLambda: lambdaNodeJs.NodejsFunction;
-  private getOneLambda: lambdaNodeJs.NodejsFunction;
-  private createOneLambda: lambdaNodeJs.NodejsFunction;
-  private updateOneLambda: lambdaNodeJs.NodejsFunction;
-  private deleteAllLambda: lambdaNodeJs.NodejsFunction;
-  private deleteOneLambda: lambdaNodeJs.NodejsFunction;
+  private getAllItemsLambda: lambdaNodeJs.NodejsFunction;
+  private getItemLambda: lambdaNodeJs.NodejsFunction;
+  private createItemLambda: lambdaNodeJs.NodejsFunction;
+  private updateItemLambda: lambdaNodeJs.NodejsFunction;
+  private deleteAllItemsLambda: lambdaNodeJs.NodejsFunction;
+  private deleteItemLambda: lambdaNodeJs.NodejsFunction;
   private apiGateway: apigateway.RestApi;
   private canary: syntheticsAlpha.Canary;
 
@@ -39,7 +39,7 @@ export class LambdaExampleStack extends cdk.Stack {
       subnetConfiguration: [
         {
           cidrMask: 24,
-          name: "LambdaExamplePublicSubnet",
+          name: "Public",
           subnetType: ec2.SubnetType.PUBLIC,
         },
       ],
@@ -91,39 +91,45 @@ export class LambdaExampleStack extends cdk.Stack {
     }
 
     // Create a Lambda function for each of the CRUD operations
-    this.getOneLambda = new lambdaNodeJs.NodejsFunction(this, 'GetOneItemFunction', {
+    this.getItemLambda = new lambdaNodeJs.NodejsFunction(this, 'GetItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-one.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'LambdaExampleGetItemFunction'
     });
-    this.getAllLambda = new lambdaNodeJs.NodejsFunction(this, 'GetAllItemsFunction', {
+    this.getAllItemsLambda = new lambdaNodeJs.NodejsFunction(this, 'GetAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-all.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'LambdaExampleGetAllItemsFunction'
     });
-    this.deleteAllLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteAllItemsFunction', {
+    this.deleteAllItemsLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-all.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'LambdaExampleDeleteAllItemsFunction',
       timeout: cdk.Duration.minutes(15)
     });
-    this.createOneLambda = new lambdaNodeJs.NodejsFunction(this, 'CreateItemFunction', {
+    this.createItemLambda = new lambdaNodeJs.NodejsFunction(this, 'CreateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'create.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'LambdaExampleCreateItemFunction'
     });
-    this.updateOneLambda = new lambdaNodeJs.NodejsFunction(this, 'UpdateItemFunction', {
+    this.updateItemLambda = new lambdaNodeJs.NodejsFunction(this, 'UpdateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'update-one.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'LambdaExampleUpdateItemFunction'
     });
-    this.deleteOneLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteItemFunction', {
+    this.deleteItemLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-one.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'LambdaExampleDeleteItemFunction'
     });
 
     // Grant the Lambda function read access to the DynamoDB table
-    this.dynamoDbTable.grantReadWriteData(this.getAllLambda);
-    this.dynamoDbTable.grantReadWriteData(this.getOneLambda);
-    this.dynamoDbTable.grantReadWriteData(this.createOneLambda);
-    this.dynamoDbTable.grantReadWriteData(this.updateOneLambda);
-    this.dynamoDbTable.grantReadWriteData(this.deleteAllLambda);
-    this.dynamoDbTable.grantReadWriteData(this.deleteOneLambda);
+    this.dynamoDbTable.grantReadWriteData(this.getAllItemsLambda);
+    this.dynamoDbTable.grantReadWriteData(this.getItemLambda);
+    this.dynamoDbTable.grantReadWriteData(this.createItemLambda);
+    this.dynamoDbTable.grantReadWriteData(this.updateItemLambda);
+    this.dynamoDbTable.grantReadWriteData(this.deleteAllItemsLambda);
+    this.dynamoDbTable.grantReadWriteData(this.deleteItemLambda);
   }
 
   private createApiGateway() {
@@ -179,12 +185,12 @@ export class LambdaExampleStack extends cdk.Stack {
     });
 
     // Integrate the Lambda functions with the API Gateway resource
-    const getAllIntegration = new apigateway.LambdaIntegration(this.getAllLambda);
-    const createOneIntegration = new apigateway.LambdaIntegration(this.createOneLambda);
-    const deleteAllIntegration = new apigateway.LambdaIntegration(this.deleteAllLambda);
-    const getOneIntegration = new apigateway.LambdaIntegration(this.getOneLambda);
-    const updateOneIntegration = new apigateway.LambdaIntegration(this.updateOneLambda);
-    const deleteOneIntegration = new apigateway.LambdaIntegration(this.deleteOneLambda);
+    const getAllIntegration = new apigateway.LambdaIntegration(this.getAllItemsLambda);
+    const createOneIntegration = new apigateway.LambdaIntegration(this.createItemLambda);
+    const deleteAllIntegration = new apigateway.LambdaIntegration(this.deleteAllItemsLambda);
+    const getOneIntegration = new apigateway.LambdaIntegration(this.getItemLambda);
+    const updateOneIntegration = new apigateway.LambdaIntegration(this.updateItemLambda);
+    const deleteOneIntegration = new apigateway.LambdaIntegration(this.deleteItemLambda);
 
     const items = this.apiGateway.root.addResource('items');
     items.addMethod('GET', getAllIntegration);
