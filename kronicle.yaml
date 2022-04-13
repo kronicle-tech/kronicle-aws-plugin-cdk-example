@@ -3,9 +3,9 @@
 components:
   - id: lambda-example
     name: Lambda Example
-    typeId: spa
+    typeId: microservice
     repo:
-      url: https://github.com/kronicle-tech/kronicle.git
+      url: https://github.com/simondean/kronicle-aws-plugin-cdk-example.git
     description: |
       An example AWS Lambda based service.  Uses API Gateway and DynamoDB
     notes: |

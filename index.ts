@@ -9,15 +9,15 @@ import * as synthetics from 'aws-cdk-lib/aws-synthetics';
 import * as syntheticsAlpha from '@aws-cdk/aws-synthetics-alpha';
 import * as path from 'path'
 
-export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
+export class LambdaExampleStack extends cdk.Stack {
   private vpc: ec2.Vpc;
   private dynamoDbTable: dynamodb.Table;
-  private getAllLambda: lambdaNodeJs.NodejsFunction;
-  private getOneLambda: lambdaNodeJs.NodejsFunction;
-  private createOneLambda: lambdaNodeJs.NodejsFunction;
-  private updateOneLambda: lambdaNodeJs.NodejsFunction;
-  private deleteAllLambda: lambdaNodeJs.NodejsFunction;
-  private deleteOneLambda: lambdaNodeJs.NodejsFunction;
+  private getAllItemsLambda: lambdaNodeJs.NodejsFunction;
+  private getItemLambda: lambdaNodeJs.NodejsFunction;
+  private createItemLambda: lambdaNodeJs.NodejsFunction;
+  private updateItemLambda: lambdaNodeJs.NodejsFunction;
+  private deleteAllItemsLambda: lambdaNodeJs.NodejsFunction;
+  private deleteItemLambda: lambdaNodeJs.NodejsFunction;
   private apiGateway: apigateway.RestApi;
   private canary: syntheticsAlpha.Canary;
 
@@ -32,8 +32,8 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createVpc() {
-    this.vpc = new ec2.Vpc(this, "exampleVpc", {
-      vpcName: "example",
+    this.vpc = new ec2.Vpc(this, "Vpc", {
+      vpcName: "lambda-example-vpc",
       maxAzs: 2,
       natGateways: 0,
       subnetConfiguration: [
@@ -57,12 +57,12 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createDynamoDbTable() {
-    this.dynamoDbTable = new dynamodb.Table(this, 'items', {
+    this.dynamoDbTable = new dynamodb.Table(this, 'LambdaExampleDynamoDbTable', {
       partitionKey: {
         name: 'itemId',
         type: dynamodb.AttributeType.STRING
       },
-      tableName: 'items',
+      tableName: 'lambda-example-dynamodb-table',
 
       /**
        *  The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
@@ -91,51 +91,57 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     }
 
     // Create a Lambda function for each of the CRUD operations
-    this.getOneLambda = new lambdaNodeJs.NodejsFunction(this, 'getOneItemFunction', {
+    this.getItemLambda = new lambdaNodeJs.NodejsFunction(this, 'GetItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-one.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'lambda-example-get-item-function'
     });
-    this.getAllLambda = new lambdaNodeJs.NodejsFunction(this, 'getAllItemsFunction', {
+    this.getAllItemsLambda = new lambdaNodeJs.NodejsFunction(this, 'GetAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'get-all.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'lambda-example-get-all-items-function'
     });
-    this.deleteAllLambda = new lambdaNodeJs.NodejsFunction(this, 'deleteAllItemsFunction', {
+    this.deleteAllItemsLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteAllItemsFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-all.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'lambda-example-delete-all-items-function',
       timeout: cdk.Duration.minutes(15)
     });
-    this.createOneLambda = new lambdaNodeJs.NodejsFunction(this, 'createItemFunction', {
+    this.createItemLambda = new lambdaNodeJs.NodejsFunction(this, 'CreateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'create.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'lambda-example-create-item-function'
     });
-    this.updateOneLambda = new lambdaNodeJs.NodejsFunction(this, 'updateItemFunction', {
+    this.updateItemLambda = new lambdaNodeJs.NodejsFunction(this, 'UpdateItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'update-one.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'lambda-example-update-item-function'
     });
-    this.deleteOneLambda = new lambdaNodeJs.NodejsFunction(this, 'deleteItemFunction', {
+    this.deleteItemLambda = new lambdaNodeJs.NodejsFunction(this, 'DeleteItemFunction', {
       entry: path.join(__dirname, 'lambdas', 'delete-one.ts'),
       ...nodeJsFunctionProps,
+      functionName: 'lambda-example-delete-item-function'
     });
 
     // Grant the Lambda function read access to the DynamoDB table
-    this.dynamoDbTable.grantReadWriteData(this.getAllLambda);
-    this.dynamoDbTable.grantReadWriteData(this.getOneLambda);
-    this.dynamoDbTable.grantReadWriteData(this.createOneLambda);
-    this.dynamoDbTable.grantReadWriteData(this.updateOneLambda);
-    this.dynamoDbTable.grantReadWriteData(this.deleteAllLambda);
-    this.dynamoDbTable.grantReadWriteData(this.deleteOneLambda);
+    this.dynamoDbTable.grantReadWriteData(this.getAllItemsLambda);
+    this.dynamoDbTable.grantReadWriteData(this.getItemLambda);
+    this.dynamoDbTable.grantReadWriteData(this.createItemLambda);
+    this.dynamoDbTable.grantReadWriteData(this.updateItemLambda);
+    this.dynamoDbTable.grantReadWriteData(this.deleteAllItemsLambda);
+    this.dynamoDbTable.grantReadWriteData(this.deleteItemLambda);
   }
 
   private createApiGateway() {
-    const lambdaSecurityGroup = new ec2.SecurityGroup(this, 'lambdaSecurityGroup', {
+    const lambdaSecurityGroup = new ec2.SecurityGroup(this, 'ApiGatewaySecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: true,
-      securityGroupName: 'LambdaSecurityGroup'
+      securityGroupName: 'lambda-example-api-gateway-security-group'
     });
 
     lambdaSecurityGroup.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(443))
 
-    const vpcEndpoint = new ec2.InterfaceVpcEndpoint(this, 'apiVpcEndpoint', {
+    const vpcEndpoint = new ec2.InterfaceVpcEndpoint(this, 'ApiVpcEndpoint', {
       vpc: this.vpc,
       service: {
         name: 'com.amazonaws.us-west-2.execute-api',
@@ -149,8 +155,8 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     })
 
     // Create an API Gateway resource for each of the CRUD operations
-    this.apiGateway = new apigateway.RestApi(this, 'itemsApi', {
-      restApiName: 'Items Service',
+    this.apiGateway = new apigateway.RestApi(this, 'ApiGateway', {
+      restApiName: 'lambda-example-api',
       endpointTypes: [apigateway.EndpointType.PRIVATE],
       deployOptions: {
         tracingEnabled: true
@@ -179,12 +185,12 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
     });
 
     // Integrate the Lambda functions with the API Gateway resource
-    const getAllIntegration = new apigateway.LambdaIntegration(this.getAllLambda);
-    const createOneIntegration = new apigateway.LambdaIntegration(this.createOneLambda);
-    const deleteAllIntegration = new apigateway.LambdaIntegration(this.deleteAllLambda);
-    const getOneIntegration = new apigateway.LambdaIntegration(this.getOneLambda);
-    const updateOneIntegration = new apigateway.LambdaIntegration(this.updateOneLambda);
-    const deleteOneIntegration = new apigateway.LambdaIntegration(this.deleteOneLambda);
+    const getAllIntegration = new apigateway.LambdaIntegration(this.getAllItemsLambda);
+    const createOneIntegration = new apigateway.LambdaIntegration(this.createItemLambda);
+    const deleteAllIntegration = new apigateway.LambdaIntegration(this.deleteAllItemsLambda);
+    const getOneIntegration = new apigateway.LambdaIntegration(this.getItemLambda);
+    const updateOneIntegration = new apigateway.LambdaIntegration(this.updateItemLambda);
+    const deleteOneIntegration = new apigateway.LambdaIntegration(this.deleteItemLambda);
 
     const items = this.apiGateway.root.addResource('items');
     items.addMethod('GET', getAllIntegration);
@@ -200,8 +206,9 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
   }
 
   private createCanary() {
-    this.canary = new syntheticsAlpha.Canary(this, 'itemsCanary', {
-      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(1)),
+    this.canary = new syntheticsAlpha.Canary(this, 'Canary', {
+      canaryName: 'lambda-example-canary',
+      schedule: syntheticsAlpha.Schedule.rate(cdk.Duration.minutes(60)),
       test: syntheticsAlpha.Test.custom({
         code: syntheticsAlpha.Code.fromAsset(path.join(__dirname, 'canary')),
         handler: 'all-endpoints.handler',
@@ -217,10 +224,10 @@ export class ApiLambdaCrudDynamoDBStack extends cdk.Stack {
       'service-role/AWSLambdaVPCAccessExecutionRole'
     ))
 
-    const canarySecurityGroup = new ec2.SecurityGroup(this, 'canarySecurityGroup', {
+    const canarySecurityGroup = new ec2.SecurityGroup(this, 'CanarySecurityGroup', {
       vpc: this.vpc,
       allowAllOutbound: true,
-      securityGroupName: 'CanarySecurityGroup'
+      securityGroupName: 'lambda-example-canary-security-group'
     });
 
     canarySecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic())
@@ -264,7 +271,7 @@ export function addCorsOptions(apiResource: apigateway.IResource) {
 }
 
 const app = new cdk.App();
-new ApiLambdaCrudDynamoDBStack(app, 'ApiLambdaCrudDynamoDBExample', {
+new LambdaExampleStack(app, 'LambdaExample', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION
