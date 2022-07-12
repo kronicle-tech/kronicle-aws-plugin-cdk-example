@@ -10,7 +10,7 @@ import * as syntheticsAlpha from '@aws-cdk/aws-synthetics-alpha';
 import * as path from 'path'
 
 export class LambdaExampleStack extends cdk.Stack {
-  private vpc: ec2.Vpc;
+  private vpc: ec2.IVpc;
   private dynamoDbTable: dynamodb.Table;
   private getAllItemsLambda: lambdaNodeJs.NodejsFunction;
   private getItemLambda: lambdaNodeJs.NodejsFunction;
@@ -24,36 +24,17 @@ export class LambdaExampleStack extends cdk.Stack {
   constructor(app: cdk.App, id: string, props?: cdk.StackProps) {
     super(app, id, props);
 
-    this.createVpc();
+    this.lookupVpc();
     this.createDynamoDbTable();
     this.createLambdas();
     this.createApiGateway();
     this.createCanary();
   }
 
-  private createVpc() {
-    this.vpc = new ec2.Vpc(this, "Vpc", {
-      vpcName: "lambda-example-vpc",
-      maxAzs: 2,
-      natGateways: 0,
-      subnetConfiguration: [
-        {
-          cidrMask: 24,
-          name: "public",
-          subnetType: ec2.SubnetType.PUBLIC,
-        },
-      ],
+  private lookupVpc() {
+    this.vpc = ec2.Vpc.fromLookup(this, "Vpc", {
+      vpcName: "kronicle",
     });
-
-    // Needed by CloudWatch Synthetics Canary
-    this.vpc.addGatewayEndpoint('S3VpcEndpoint', {
-      service: ec2.GatewayVpcEndpointAwsService.S3
-    })
-
-    // Needed by CloudWatch Synthetics Canary
-    this.vpc.addInterfaceEndpoint('CloudWatchVpcEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH
-    })
   }
 
   private createDynamoDbTable() {
@@ -71,6 +52,7 @@ export class LambdaExampleStack extends cdk.Stack {
        */
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
     });
+    cdk.Tags.of(this.dynamoDbTable).add('aliases', 'lambda-example-dynamodb-table');
   }
 
   private createLambdas() {
@@ -183,6 +165,7 @@ export class LambdaExampleStack extends cdk.Stack {
         ]
       })
     });
+    cdk.Tags.of(this.apiGateway).add('aliases', 'lambda-example-api-prod');
 
     // Integrate the Lambda functions with the API Gateway resource
     const getAllIntegration = new apigateway.LambdaIntegration(this.getAllItemsLambda);
